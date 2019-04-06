@@ -1,23 +1,18 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.hardware.DcMotor;
-
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.robot.Robot;
 import com.qualcomm.robotcore.util.ElapsedTime;
-
+import com.qualcomm.robotcore.hardware.Servo;
 /**
- * Created by peter on 11/22/17.
+ * Created by peter on 4/11/18.
  */
 
-public class DriveController {
-    private HumanControl humanControl;
-    double MAX_SPEED = 1;
+public class RobotModel {
     int TICKS_PER_ROTATION = 1120;
     double WHEEL_DIAMETER = 6;
     double INCHES_PER_TICK = (WHEEL_DIAMETER * Math.PI) / TICKS_PER_ROTATION;
@@ -29,12 +24,13 @@ public class DriveController {
     DcMotor frontRightMotor = null;
     DcMotor backLeftMotor = null;
     DcMotor backRightMotor = null;
-    ElapsedTime pidTimer;
 
-    PIDController drivePID;
-    public DriveController(RobotModel robot, HumanControl humanControl) {
-        pidTimer = new ElapsedTime();
-        this.humanControl = humanControl;
+    public DcMotor armLeftMotor = null;
+    public DcMotor armRightMotor = null;
+
+    Servo leftServo = null;
+    Servo rightServo = null;
+    public RobotModel(HardwareMap hardwareMap) {
         backLeftMotor = hardwareMap.dcMotor.get("backLeftMotor");
         frontLeftMotor = hardwareMap.dcMotor.get("frontLeftMotor");
 
@@ -48,58 +44,18 @@ public class DriveController {
         frontRightMotor.setDirection(DcMotor.Direction.FORWARD);
         backRightMotor.setDirection(DcMotor.Direction.FORWARD);
 
+        armLeftMotor = hardwareMap.dcMotor.get("armLeftMotor");
+        armRightMotor = hardwareMap.dcMotor.get("armRightMotor");
 
-        resetEncoders();
-        drivePID = new PIDController(.03, .0001, .001, 1, 1);
+        armLeftMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+        armRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
-    }
+        leftServo = hardwareMap.servo.get("leftServo");
+        rightServo = hardwareMap.servo.get("rightServo");
+
+        armLeftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
 
-
-    void arcadeDrive(double moveValue, double rotateValue) {
-        double left = moveValue + rotateValue;
-        double right = moveValue - rotateValue;
-
-        if(left > 1) {
-            left = 1;
-        } else if(left < -1) {
-            left = -1;
-        }
-
-        if(right > 1) {
-            right = 1;
-        } else if(right < -1) {
-            right = -1;
-        }
-
-        setLeftDrive(Math.abs(left)*left*MAX_SPEED);
-        setRightDrive(Math.abs(right)*right*MAX_SPEED);
-    }
-    void tankDrive(double left, double right) {
-        setLeftDrive(-left);
-        setRightDrive(right);
-    }
-
-    public void runToDistance(double distance) {
-        pidTimer.reset();
-        resetEncoders();
-        drivePID.setSetpoint(distance);
-        do {
-            arcadeDrive(drivePID.run(backLeftMotor.getCurrentPosition()*INCHES_PER_TICK), 0);
-            pidTimer.reset();
-        } while(!drivePID.onTarget() && (pidTimer.milliseconds() <= 20));
-
-        arcadeDrive(0, 0);
-
-    }
-    void update() {
-        if(humanControl.isBrakeDesired()) {
-            MAX_SPEED = .7;
-        } else {
-            MAX_SPEED = 1;
-        }
-        arcadeDrive(humanControl.getDriverLeftJoyY(), humanControl.getDriverRightJoyX());
-        //arcadeDrive(humanControl.getDriverRightJoyX(), humanControl.getDriverLeftJoyY());
     }
 
     public void resetEncoders() {
@@ -108,6 +64,8 @@ public class DriveController {
         backRightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
     }
+
+
     public void reset() {
         frontLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         frontRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -137,4 +95,52 @@ public class DriveController {
         backRightMotor.setPower(0);
     }
 
+    public void setArmMotors(double power) {
+        armLeftMotor.setPower(power);
+        armRightMotor.setPower(power);
+
+    }
+
+    public void runArmWithEncoders() {
+        armLeftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        armRightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    }
+
+    public void runArmWithoutEncoders() {
+        armLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        armRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void setLeftServoPosition(double position) {
+        leftServo.setPosition(position);
+    }
+    public void setRightServoPosition(double position) {
+        rightServo.setPosition(position);
+    }
+
+
+    public void runDriveWithEncoders(int position) {
+        backLeftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontLeftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        backLeftMotor.setTargetPosition(position);
+        frontLeftMotor.setTargetPosition(position);
+        backRightMotor.setTargetPosition(position);
+        backRightMotor.setTargetPosition(position);
+
+    }
+
+    public double getLeftDriveEncoderDistance() {
+        return backLeftMotor.getCurrentPosition() * INCHES_PER_TICK;
+    }
+
+    public double getRightDriveEncoderDistance() {
+        return backRightMotor.getCurrentPosition() * INCHES_PER_TICK;
+    }
+
+    public double getArmEncoderAngle() {
+        return armLeftMotor.getCurrentPosition() * DEGREE_PER_TICK;
+    }
 }

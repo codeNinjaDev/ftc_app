@@ -8,71 +8,57 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
  */
 
 public class ArmController {
-    private DcMotor armLeftMotor;
-    private DcMotor armRightMotor;
+    private RobotModel robot;
     private HumanControl humanControl;
-    public ArmController(DcMotor armLeftMotor, DcMotor armRightMotor, HumanControl humanControl) {
-        this.armLeftMotor = armLeftMotor;
-        this.armLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        this.armRightMotor = armRightMotor;
-        this.armRightMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+    private PIDController armPID;
+    Thread armPIDThread;
+
+    public ArmController(RobotModel robot, HumanControl humanControl) {
+
         this.humanControl = humanControl;
-    }
-    //moves at constant power no matter what joystick value;
-    public void moveArmUp(double power) {
-        armLeftMotor.setPower(-power);
-        armRightMotor.setPower(-power);
+        this.robot = robot;
+        armPID = new PIDController(0.01, 0.0001, 0.009, .6, 5);
+        robot.armLeftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
     }
-    public void moveArmDown() {
-        armLeftMotor.setPower(0.1);
-        armRightMotor.setPower(0.1);
-
-    }
-    public double getPosition() {
-        armLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-        return armLeftMotor.getCurrentPosition();
-    }
-
-    public void moveArmToPosition(int ticks) {
-        armLeftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        armRightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        armLeftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        armRightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-        armLeftMotor.setTargetPosition(-ticks);
-        armRightMotor.setTargetPosition(-ticks);
-
-        armLeftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        armRightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-        moveArmUp(0.1);
-
-        while(armLeftMotor.isBusy() && armRightMotor.isBusy()) {
 
 
-        }
 
-        armLeftMotor.setPower(0);
-        armRightMotor.setPower(0);
-
-        armLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        armRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-    }
 
     public void update() {
-        armLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        armRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+
         if(humanControl.isArmUpDesired()) {
-            moveArmUp(0.2);
+            robot.setArmMotors(humanControl.getOperatorLeftJoyY()*0.4);
         } else if(humanControl.isArmDownDesired()) {
-            moveArmDown();
+            robot.setArmMotors(humanControl.getOperatorLeftJoyY()*0.4);
         } else {
-            armLeftMotor.setPower(0.0);
-            armRightMotor.setPower(0.0);
+            robot.setArmMotors(0);
         }
     }
+
+    public void goToTopPosition() {
+
+        //Go to 100 degrees
+        armPID.setSetpoint(100);
+        //Enable PID with encoder
+        armPID.run(robot.getArmEncoderAngle());
+    }
+
+    public void goToMidPosition() {
+        armPID.setSetpoint(60);
+        armPID.run(robot.getArmEncoderAngle());
+
+    }
+
+    public void goToBottomPosition() {
+        armPID.setSetpoint(30);
+        armPID.run(robot.getArmEncoderAngle());
+
+    }
+
+    public boolean armPIDOnTarget() {
+        return armPID.onTarget();
+    }
+
 }

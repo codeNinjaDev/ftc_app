@@ -38,7 +38,9 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.PIDCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.robot.Robot;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 /**
@@ -62,16 +64,7 @@ public class Autonomous extends LinearOpMode {
     /* Declare OpMode members. */
     private ElapsedTime runtime = new ElapsedTime();
 
-    DcMotor frontLeftMotor = null;
-    DcMotor frontRightMotor = null;
-    DcMotor backLeftMotor = null;
-    DcMotor backRightMotor = null;
-
-    DcMotor armLeftMotor = null;
-    DcMotor armRightMotor = null;
-
-    Servo leftServo = null;
-    Servo rightServo = null;
+    RobotModel robot;
 
     HumanControl humanControl = new HumanControl(gamepad1, gamepad2);
 
@@ -79,40 +72,6 @@ public class Autonomous extends LinearOpMode {
     ArmController armController;
     ClampController clampController;
 
-    double ratioCheck(int test_ticks, double power) {
-        backLeftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        backRightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        backLeftMotor.setTargetPosition(test_ticks);
-        backRightMotor.setTargetPosition(-test_ticks);
-
-        backLeftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        backRightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-        //turn right
-        driveController.leftPower(power);
-        driveController.rightPower(power);
-
-        while(backLeftMotor.isBusy() && backRightMotor.isBusy()) {
-
-        }
-
-        driveController.stopDriving();
-
-        backLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        backRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        //Might use above ^ code in a function because I use it a lot
-        //                |
-
-        //Now measure angle it goes and store in variable
-        double angleTurned = /*lets say*/ 108;
-
-        double encoderAngleRatio = test_ticks/angleTurned; //e.g 5 ticks per degree
-        TICKS_PER_DEGREE = encoderAngleRatio;
-
-        telemetry.addData("EncoderAngleRatio", encoderAngleRatio);
-        return encoderAngleRatio;
-    }
 
 
 
@@ -121,22 +80,12 @@ public class Autonomous extends LinearOpMode {
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
-        backLeftMotor = hardwareMap.dcMotor.get("backLeftMotor");
-        frontLeftMotor = hardwareMap.dcMotor.get("frontLeftMotor");
-
-        backRightMotor = hardwareMap.dcMotor.get("backRightMotor");
-        frontRightMotor = hardwareMap.dcMotor.get("frontRightMotor");
-
-        armLeftMotor = hardwareMap.dcMotor.get("armLeftMotor");
-        armRightMotor = hardwareMap.dcMotor.get("armRightMotor");
-
-        leftServo = hardwareMap.servo.get("leftServo");
-        rightServo = hardwareMap.servo.get("rightServo");
+        robot = new RobotModel(hardwareMap);
 
 
-        driveController = new DriveController(frontLeftMotor, backLeftMotor, frontRightMotor, backRightMotor, humanControl);
-        armController = new ArmController(armLeftMotor, armRightMotor, humanControl);
-        clampController = new ClampController(leftServo, rightServo, humanControl);
+        driveController = new DriveController(robot, humanControl);
+        armController = new ArmController(robot, humanControl);
+        clampController = new ClampController(robot, humanControl);
         /* eg: Initialize the hardware variables. Note that the strings used here as parameters
          * to 'get' must correspond to the names assigned during the robot configuration
          * step (using the FTC Robot Controller app on the phone).
@@ -157,12 +106,12 @@ public class Autonomous extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        backLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        backRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
 
         runtime.reset();
         //Clamp block
         clampController.clampClamp();
+
         //Move arm up
         //armController.moveArm();
         //drive 5 inches
@@ -171,15 +120,14 @@ public class Autonomous extends LinearOpMode {
         //driveController.turnAngle(-90, 0.5);
         //telemetry.addData("angle", ratioCheck(1200, 0.5));
         //driveController.turnLeft(1, 90);
-        driveController.driveDistance(1, 4, 60);
-        armLeftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        driveController.runToDistance(60);
+        while(!armController.armPIDOnTarget())
+            armController.goToTopPosition();
+        robot.setArmMotors(0);
         //armController.moveArmToPosition(10);
 
         while(opModeIsActive()) {
-            telemetry.addData("leftencoderCount", backLeftMotor.getCurrentPosition());
-            telemetry.addData("rightencoderCount", backRightMotor.getCurrentPosition());
 
-            telemetry.addData("armEncoderCount", armController.getPosition());
 
             telemetry.update();
         }
