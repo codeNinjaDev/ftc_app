@@ -1,62 +1,53 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.robot.Robot;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.HumanControl;
+import org.firstinspires.ftc.teamcode.libs.PIDController;
 
 /**
  * Created by peter on 11/22/17.
  */
 
-public class DriveController {
+public class DriveSubsystem implements Subsystem {
     private HumanControl humanControl;
     double MAX_SPEED = 1;
-    int TICKS_PER_ROTATION = 1120;
+    int TICKS_PER_ROTATION = 288;
     double WHEEL_DIAMETER = 6;
     double INCHES_PER_TICK = (WHEEL_DIAMETER * Math.PI) / TICKS_PER_ROTATION;
     private double DEGREE_PER_TICK = 2;
-
+    private Telemetry tl;
     public HardwareMap hardwareMap = null;
 
-    DcMotor frontLeftMotor = null;
-    DcMotor frontRightMotor = null;
     DcMotor backLeftMotor = null;
     DcMotor backRightMotor = null;
     ElapsedTime pidTimer;
 
-    PIDController drivePID;
-    public DriveController(RobotModel robot, HumanControl humanControl) {
+    public DriveSubsystem(HardwareMap hardwareMap, HumanControl humanControl, Telemetry tl) {
         pidTimer = new ElapsedTime();
         this.humanControl = humanControl;
+        this.tl = tl;
         backLeftMotor = hardwareMap.dcMotor.get("backLeftMotor");
-        frontLeftMotor = hardwareMap.dcMotor.get("frontLeftMotor");
-
         backRightMotor = hardwareMap.dcMotor.get("backRightMotor");
-        frontRightMotor = hardwareMap.dcMotor.get("frontRightMotor");
 
 
-        frontLeftMotor.setDirection(DcMotor.Direction.REVERSE);
         backLeftMotor.setDirection(DcMotor.Direction.REVERSE);
-
-        frontRightMotor.setDirection(DcMotor.Direction.FORWARD);
         backRightMotor.setDirection(DcMotor.Direction.FORWARD);
 
 
         resetEncoders();
-        drivePID = new PIDController(.03, .0001, .001, 1, 1);
 
     }
 
+    public void init() {
+        //resetEncoders();
+    }
 
-
-    void arcadeDrive(double moveValue, double rotateValue) {
+    public void arcadeDrive(double moveValue, double rotateValue) {
         double left = moveValue + rotateValue;
         double right = moveValue - rotateValue;
 
@@ -71,6 +62,13 @@ public class DriveController {
         } else if(right < -1) {
             right = -1;
         }
+        tl.addData("ArcadeDriveLeftPower", Math.abs(left)*left*MAX_SPEED);
+        tl.addData("ArcadeDriveRightPower", Math.abs(right)*right*MAX_SPEED);
+        tl.addData("LeftMotor", backLeftMotor);
+        tl.addData("LeftMotorPower", backLeftMotor.getPower());
+        tl.addData("LeftMotorPort", backLeftMotor.getPortNumber());
+        tl.addData("rightMotorPort", backRightMotor.getPortNumber());
+
 
         setLeftDrive(Math.abs(left)*left*MAX_SPEED);
         setRightDrive(Math.abs(right)*right*MAX_SPEED);
@@ -80,19 +78,10 @@ public class DriveController {
         setRightDrive(right);
     }
 
-    public void runToDistance(double distance) {
-        pidTimer.reset();
-        resetEncoders();
-        drivePID.setSetpoint(distance);
-        do {
-            arcadeDrive(drivePID.run(backLeftMotor.getCurrentPosition()*INCHES_PER_TICK), 0);
-            pidTimer.reset();
-        } while(!drivePID.onTarget() && (pidTimer.milliseconds() <= 20));
-
-        arcadeDrive(0, 0);
-
+    public double getAverageDistance() {
+        return (backLeftMotor.getCurrentPosition()*INCHES_PER_TICK + backRightMotor.getCurrentPosition()*INCHES_PER_TICK) / 2;
     }
-    void update() {
+    public void update(Telemetry telemetry) {
         if(humanControl.isBrakeDesired()) {
             MAX_SPEED = .7;
         } else {
@@ -109,32 +98,35 @@ public class DriveController {
 
     }
     public void reset() {
-        frontLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        frontRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        resetEncoders();
+
+
         backLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
     }
     public void driveForward(double power) {
-        frontLeftMotor.setPower(power);
-        frontRightMotor.setPower(power);
+
         backLeftMotor.setPower(power);
         backRightMotor.setPower(power);
     }
 
     public void setRightDrive(double power) {
-        frontRightMotor.setPower(power);
         backRightMotor.setPower(power);
     }
     public void setLeftDrive(double power) {
-        frontLeftMotor.setPower(power);
         backLeftMotor.setPower(power);
     }
 
     public void stopDriving() {
-        frontLeftMotor.setPower(0);
-        frontRightMotor.setPower(0);
+
         backLeftMotor.setPower(0);
         backRightMotor.setPower(0);
+    }
+
+    public void stop() {
+        stopDriving();
+        reset();
     }
 
 }

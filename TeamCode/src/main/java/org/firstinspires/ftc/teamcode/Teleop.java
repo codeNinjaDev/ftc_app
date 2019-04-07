@@ -32,12 +32,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.hardware.Servo;
+
+import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 
 
 /**
@@ -64,9 +63,7 @@ public class Teleop extends OpMode
 
 
     HumanControl humanControl;
-    DriveController driveController;
-    ArmController armController;
-    ClampController clampController;
+    DriveSubsystem driveSubsystem;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -77,7 +74,7 @@ public class Teleop extends OpMode
 
 
         humanControl = new HumanControl(gamepad1, gamepad2);
-        driveController = new DriveController(hardwareMap, humanControl);
+        driveSubsystem = new DriveSubsystem(hardwareMap, humanControl, telemetry);
 
         /* eg: Initialize the hardware variables. Note that the strings used here as parameters
          * to 'get' must correspond to the names assigned during the robot configuration
@@ -107,7 +104,6 @@ public class Teleop extends OpMode
     public void start() {
         runtime.reset();
 
-        //armController.moveArmToPosition(500);
 
     }
 
@@ -119,8 +115,7 @@ public class Teleop extends OpMode
 
 
 
-        driveController.update();
-
+        driveSubsystem.update(telemetry);
 
         telemetry.addData("gamepad_driver_left_y", humanControl.getDriverLeftJoyY());
         telemetry.addData("gamepad_driver_left_x", humanControl.getDriverLeftJoyX());

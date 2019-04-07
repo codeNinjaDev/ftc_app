@@ -26,7 +26,7 @@ public class HumanControl {
     private double driverLeftJoyX, driverLeftJoyY, driverRightJoyX, driverRightJoyY;
     private double operatorLeftJoyX, operatorLeftJoyY, operatorRightJoyX, operatorRightJoyY;
 
-    boolean clampOpenDesired, clampClosedDesired, armDownDesired, armUpDesired, clampMiddleDesired, brakeDesired;
+    boolean brakeDesired;
 
 
 
@@ -44,12 +44,6 @@ public class HumanControl {
         operatorRightJoyX = 0;
         operatorRightJoyY = 0;
 
-
-        clampClosedDesired = false;
-        clampOpenDesired = false;
-        armDownDesired = false;
-        armUpDesired = false;
-        clampMiddleDesired = false;
         brakeDesired = false;
     }
 
@@ -64,11 +58,6 @@ public class HumanControl {
         operatorRightJoyX = getOperatorRightJoyX();
         operatorRightJoyY = getOperatorRightJoyY();
 
-        clampClosedDesired = isClampClosedDesired();
-        clampOpenDesired = isClampOpenDesired();
-        armUpDesired = isArmUpDesired();
-        armDownDesired = isArmDownDesired();
-        clampMiddleDesired = isClampMiddleDesired();
         brakeDesired = isBrakeDesired();
     }
 
@@ -96,41 +85,6 @@ public class HumanControl {
     }
     public double getOperatorRightJoyX() {
         return operatorJoy.right_stick_x;
-    }
-
-    public boolean isArmUpDesired() {
-        if(getOperatorLeftJoyY() > 0) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public boolean isArmDownDesired() {
-        if(getOperatorLeftJoyY() < 0) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public boolean isClampOpenDesired() {
-        if(operatorJoy.a) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-    public boolean isClampClosedDesired() {
-        if(operatorJoy.y) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public boolean isClampMiddleDesired() {
-        if(operatorJoy.right_trigger )
     }
 
     public boolean isBrakeDesired() {

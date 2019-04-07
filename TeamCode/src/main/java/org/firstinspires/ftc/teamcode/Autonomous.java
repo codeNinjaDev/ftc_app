@@ -32,16 +32,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.PIDCoefficients;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.robot.Robot;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.teamcode.commands.DriveDistanceCommand;
+import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 
 /**
  * This file contains an minimal example of a Linear "OpMode". An OpMode is a 'program' that runs in either
@@ -56,21 +51,19 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name="peterPurge", group="Routines")  // @Autonomous(...) is the other common choice
+@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name="DriveDistance", group="Autos")  // @Autonomous(...) is the other common choice
 //@Disabled
 public class Autonomous extends LinearOpMode {
     int TICKS_PER_ROTATION = 1120;
     double TICKS_PER_DEGREE = 0;
     /* Declare OpMode members. */
     private ElapsedTime runtime = new ElapsedTime();
-
-    RobotModel robot;
+    private CommandRunner driveFiftyInches;
 
     HumanControl humanControl = new HumanControl(gamepad1, gamepad2);
 
-    DriveController driveController;
-    ArmController armController;
-    ClampController clampController;
+    DriveSubsystem driveController;
+
 
 
 
@@ -80,23 +73,11 @@ public class Autonomous extends LinearOpMode {
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
-        robot = new RobotModel(hardwareMap);
 
 
-        driveController = new DriveController(robot, humanControl);
-        armController = new ArmController(robot, humanControl);
-        clampController = new ClampController(robot, humanControl);
-        /* eg: Initialize the hardware variables. Note that the strings used here as parameters
-         * to 'get' must correspond to the names assigned during the robot configuration
-         * step (using the FTC Robot Controller app on the phone).
-         */
-        // leftMotor  = hardwareMap.dcMotor.get("left_drive");
-        // rightMotor = hardwareMap.dcMotor.get("right_drive");
-
-        // eg: Set the drive motor directions:
-        // "Reverse" the motor that runs backwards when connected directly to the battery
-        //leftMotor.setDirection(DcMotor.Direction.FORWARD); // Set to REVERSE if using AndyMark motors
-        //rightMotor.setDirection(DcMotor.Direction.REVERSE);// Set to FORWARD if using AndyMark motors
+        driveController = new DriveSubsystem(hardwareMap, humanControl, telemetry);
+        double[] PID = {1, 0, 0};
+        driveFiftyInches = new CommandRunner(this, new DriveDistanceCommand(driveController, PID, 50, 5, 5), telemetry);
 
 
 
@@ -109,30 +90,12 @@ public class Autonomous extends LinearOpMode {
 
 
         runtime.reset();
-        //Clamp block
-        clampController.clampClamp();
-
-        //Move arm up
-        //armController.moveArm();
-        //drive 5 inches
-        //driveController.driveDistance(1, 4, 60);
-        //sleep(5000);
-        //driveController.turnAngle(-90, 0.5);
-        //telemetry.addData("angle", ratioCheck(1200, 0.5));
-        //driveController.turnLeft(1, 90);
-        driveController.runToDistance(60);
-        while(!armController.armPIDOnTarget())
-            armController.goToTopPosition();
-        robot.setArmMotors(0);
-        //armController.moveArmToPosition(10);
-
+        //driveFiftyInches.runCommand();
         while(opModeIsActive()) {
-
-
             telemetry.update();
+
+            driveController.arcadeDrive(1, 0);
         }
-
-
 
     }
 
